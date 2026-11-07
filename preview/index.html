@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>herdr · droids — preview</title>
+<style>
+  html,body{background:#05070c}
+  body[data-appearance="light"]{background:#cfc6b4}
+</style>
+</head>
+<body data-appearance="dark">
+  <header id="bar"></header>
+  <div id="stageWrap"><div id="stage"></div></div>
+  <script>
+    window.addEventListener("error", function (e) {
+      var p = document.createElement("pre");
+      p.textContent = "ERROR: " + e.message + " @ " + (e.filename || "") + ":" + e.lineno + ":" + e.colno + "\n" + (e.error && e.error.stack || "");
+      p.style.cssText = "color:#f66;background:#100;font:13px monospace;padding:10px;margin:0;white-space:pre-wrap;z-index:9999;position:fixed;left:0;right:0;bottom:0";
+      document.addEventListener("DOMContentLoaded", function () { document.body.appendChild(p); });
+    });
+  </script>
+  <script src="./data.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

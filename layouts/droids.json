@@ -1,0 +1,137 @@
+{
+  "id": "root",
+  "type": "row",
+  "titlebar": "none",
+  "traffic_lights": [16, 18],
+  "theme": { "light": "droids-light", "dark": "droids-dark" },
+  "background": "canvas",
+  "ui_font": "Geist",
+  "font": "JetBrains Mono",
+  "font_size": 14,
+  "terminal_padding": [14, 12],
+  "divider": { "width": 1, "color": "border" },
+  "children": [
+    {
+      "id": "sidebar",
+      "type": "column",
+      "size": { "px": 300 },
+      "min": 44,
+      "max": 520,
+      "background": "chrome",
+      "resizable": false,
+      "children": [
+        {
+          "id": "brand",
+          "type": "block",
+          "size": { "px": 54 },
+          "window_drag": true,
+          "content": { "mod": "droids", "props": { "role": "brand" } }
+        },
+        {
+          "id": "sidebar-lists",
+          "type": "column",
+          "children": [
+            {
+              "id": "spaces",
+              "type": "block",
+              "size": { "weight": 1 },
+              "min": 90,
+              "content": { "mod": "droids-spaces" }
+            },
+            {
+              "id": "agents",
+              "type": "block",
+              "size": { "weight": 1.5 },
+              "min": 120,
+              "content": { "mod": "droids", "props": { "role": "agents" } }
+            }
+          ]
+        },
+        {
+          "id": "sidebar-footer",
+          "type": "block",
+          "size": { "px": 58 },
+          "content": { "mod": "droids", "props": { "role": "footer" } }
+        }
+      ]
+    },
+    {
+      "id": "work",
+      "type": "column",
+      "resizable": false,
+      "children": [
+        {
+          "id": "tabs",
+          "type": "block",
+          "size": { "px": 46 },
+          "window_drag": true,
+          "content": { "mod": "droids-tabs" }
+        },
+        {
+          "id": "work-body",
+          "type": "row",
+          "padding": 10,
+          "gap": 10,
+          "background": "canvas",
+          "children": [
+            {
+              "id": "main",
+              "type": "block",
+              "content": {
+                "tab": "active",
+                "pane": {
+                  "gap": 10,
+                  "radius": 10,
+                  "background": "background",
+                  "lone": true,
+                  "border": { "width": 1, "color": "border" },
+                  "focus": { "width": 1, "color": "accent" },
+                  "header": {
+                    "content": { "mod": "droids", "props": { "role": "pane" } },
+                    "height": 32,
+                    "position": "top",
+                    "reveal": "always"
+                  }
+                }
+              }
+            },
+            {
+              "id": "panel",
+              "type": "column",
+              "hidden": true,
+              "size": { "px": 384 },
+              "min": 300,
+              "max": 900,
+              "children": [
+                {
+                  "id": "panel-body",
+                  "type": "stack",
+                  "active": "files",
+                  "children": [
+                    {
+                      "id": "files",
+                      "type": "block",
+                      "content": { "mod": "droids-files" }
+                    },
+                    {
+                      "id": "changes",
+                      "type": "block",
+                      "content": { "mod": "droids-changes" }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "status",
+          "type": "block",
+          "size": { "px": 32 },
+          "content": { "mod": "droids", "props": { "role": "status" } }
+        }
+      ]
+    }
+  ],
+  "preview": "layouts/droids.svg"
+}
