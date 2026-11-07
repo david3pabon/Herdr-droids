@@ -49,8 +49,22 @@ force every agent into one state so you can watch the four animations.
 | Service droid (IT-O) | anything else | small, grey, one eye |
 
 `mods/droids/droids.js` maps `program.key` / the agent's reported `app` to a
-kind; unknown agents get the service droid, so nothing shows up bare. Add an
-agent by adding a `match` entry; add a droid by adding a builder.
+kind — `kindId()` takes either a kind id or an agent name, so it is idempotent.
+Matching is exact or hyphen-bounded (`pi` claims `pi` and `pi-code`, not
+`openpi`); only names of 4+ characters match loosely inside a word. Unknown
+agents get the service droid, so nothing shows up bare. Add an agent by adding a
+`match` entry; add a droid by adding a builder.
+
+### In the bays
+
+- **Pinned berths.** Hover a row and click the pin (or click a pinned one to let
+  it go) — `terminal.pin`, so the pin follows the terminal to every Herdr client.
+  Pinned droids hold a `Pinned berths` group at the top.
+- **Sub-agents.** Agents started with `hc run` hang under their parent as a
+  small tree with their own mini droids and lamps; click one to peek at it, use
+  the chevron to fold the branch.
+- **Sorting.** The header's chip flips between `Priority` (needs-you first) and
+  `By space`; either order is what `agent.next` / `agent.prev` walk.
 
 ### States and their animations
 
@@ -73,6 +87,7 @@ layouts/droids.svg       the thumbnail Settings shows for this layout
 themes/droids-dark.json  deep-space deck: navy hull, holo cyan, gold accent
 themes/droids-light.json Tatooine light: sand chrome, teal holo, burnt gold
 mods/droids/             one mod in roles: brand, agents (the bays), footer, pane, status
+                         (and depot, a drawer that ships unplaced — see below)
 mods/droids/droids.js    the droid art as plain data — shared with the preview
 mods/droids/kit.js       spec tree -> div()/.loop(), plus the shared parts
 mods/droids-spaces/      clone of Herdr's spaces, restyled ("SPACES / fleet", lamps)
@@ -87,6 +102,28 @@ The four clones are Herdr's own mods, copied: the app replaces its own files on
 every start, so edits go in clones, which the app never touches. Cloned mods
 carry their own `kit.js` + `droids.js` + `icons/` because a mod can't import
 another mod's code at run time.
+
+## The depot drawer (shipped, unplaced)
+
+`mods/droids/depot.js` draws every droid in a `peek` drawer, most urgent first —
+tucked in, only its lamp-and-droid strip shows; slide the pointer over it for
+names. It was pulled from the default layout because it sat over the middle of
+the terminal. To try it, put a `floating` block on any node (`main` here):
+
+```json
+{
+  "id": "main", "type": "block",
+  "floating": [
+    { "id": "depot", "content": { "mod": "droids", "props": { "role": "depot" } },
+      "edge": "right", "align": "end", "peek": 46 }
+  ],
+  "content": { "tab": "active", "...": "..." }
+}
+```
+
+`"align": "end"` tucks it in the bottom-right corner instead of mid-height.
+Floating blocks aren't reachable by `layout.hide`, so it lives or dies in the
+layout file.
 
 ## Check and iterate
 

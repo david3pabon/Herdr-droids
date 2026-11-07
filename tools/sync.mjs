@@ -40,6 +40,19 @@ const mods = existsSync(join(root, "mods"))
   ? readdirSync(join(root, "mods")).filter((m) => m.startsWith("droids") && statSync(join(root, "mods", m)).isDirectory())
   : [];
 
+// kit.js, droids.js and icons/ are vendored: a mod may not import another
+// mod's code, so every droids-* mod carries its own copy of the shared kit.
+function vendor() {
+  const sharedFiles = ["kit.js", "droids.js"];
+  for (const m of readdirSync(join(root, "mods"))) {
+    if (!m.startsWith("droids") || m === "droids" || !statSync(join(root, "mods", m)).isDirectory()) continue;
+    for (const f of sharedFiles) copyFileSync(join(root, "mods/droids", f), join(root, "mods", m, f));
+    const icons = join(root, "mods/droids/icons");
+    for (const f of walk(icons)) copyFileSync(f, join(root, "mods", m, relative(icons, f)));
+  }
+}
+vendor();
+
 if (process.argv.includes("--pull")) {
   // Pull the cloned mods out of the app home: they are edited where they run.
   for (const m of [...mods, "droids-spaces", "droids-tabs", "droids-files", "droids-changes"]) {

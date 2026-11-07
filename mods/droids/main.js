@@ -5,6 +5,7 @@
 //   footer  the sidebar's footer (settings, add machine)
 //   status  the bottom bar: machine, branch, a lamp per droid, the palette key
 //   pane    a pane header: the droid running in it + split/zoom/close
+//   depot   a peek drawer of every droid, most urgent first (not placed by default)
 //
 // Panel content this layout reuses from Herdr, restyled, lives in its own
 // cloned mods: droids-spaces, droids-tabs, droids-files, droids-changes.
@@ -14,12 +15,14 @@ import { props } from "herdr";
 import { renderAgents } from "./agents.js";
 import { renderBrand, renderFooter, renderStatus } from "./chrome.js";
 import { renderPane } from "./pane.js";
+import { renderDepot } from "./depot.js";
 
-const ROLES = { brand: renderBrand, agents: renderAgents, footer: renderFooter, status: renderStatus, pane: renderPane };
+const ROLES = { brand: renderBrand, agents: renderAgents, footer: renderFooter, status: renderStatus, pane: renderPane, depot: renderDepot };
 
 export default class Droids extends View {
   init() {
     this.hovered = null;
+    this.folded = new Set();   // bays with their sub-agents hidden
   }
 
   render(cx) {

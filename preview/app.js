@@ -10,11 +10,13 @@ const state = {
   panel: "files",
   demo: true,
   view: "window",
+  folded: new Set(),
 };
 
 const AGENTS = [
-  { kind: "astromech", name: "Claude Code", task: "fixing retry backoff in the lane client", space: "hyperlane", state: "working", dur: "4m" },
-  { kind: "probe", name: "Codex", task: "waiting on approval to push", space: "hyperlane", state: "blocked", dur: "12m" },
+  { kind: "astromech", name: "Claude Code", task: "fixing retry backoff in the lane client", space: "hyperlane", state: "working", dur: "4m",
+    subs: [{ kind: "probe", name: "codex · review the diff", state: "working" }, { kind: "utility", name: "opencode · run the suite", state: "idle" }] },
+  { kind: "probe", name: "Codex", task: "waiting on approval to push", space: "hyperlane", state: "blocked", dur: "12m", pinned: true },
   { kind: "pod", name: "pi", task: "splitting holonet.rs into modules", space: "droid-maker", state: "working", dur: "1m" },
   { kind: "protocol", name: "Kimi Code", task: "wrote tests for jump coordinates", space: "holocron", state: "done", dur: "just now" },
   { kind: "utility", name: "OpenCode", task: "in the bay, nothing queued", space: "holocron", state: "idle", dur: "2h" },
@@ -203,9 +205,10 @@ function agentsPanel() {
   right.textContent = "⇅";
   box.appendChild(holo("AGENTS", "droid bays", right));
   const list = el("div", "list droidlist");
-  for (const a of AGENTS) {
+  const drawn = [];
+  const bayRow = (a) => {
     const row = el("div", `row drow${a.focus ? " on" : ""}`);
-    const bay = el("div", "bay");
+    const bay = el("div", `bay${a.pinned ? " pinned" : ""}`);
     bay.appendChild(droidNode(a.kind, a.state, { scale: 0.62, oy: -3 }));
     row.appendChild(bay);
     const info = el("div", "dinfo");
@@ -227,9 +230,99 @@ function agentsPanel() {
     meta.appendChild(sp);
     info.appendChild(meta);
     row.appendChild(info);
-    list.appendChild(row);
+    const right = el("div", "dright");
+    if ((a.subs ?? []).length) {
+      const ch = el("div", "fold");
+      ch.textContent = state.folded.has(a.name) ? "\u203a" : "\u2039";
+      ch.title = `${a.subs.length} sub-agent(s)`;
+      right.appendChild(ch);
+    }
+    const pn = el("div", `pinmark${a.pinned ? " on" : ""}`);
+    pn.textContent = "\u2363";
+    right.appendChild(pn);
+    right.appendChild(lamp(t[a.status], a.state === "working" ? 520 : a.state === "blocked" ? 300 : 0));
+    row.appendChild(right);
+    drawn.push(row);
+    for (const [i, k] of (a.subs ?? []).entries()) {
+      if (state.folded.has(a.name)) continue;
+      const sub = el("div", "row subrow");
+      const lines = el("div", "treelines");
+      lines.appendChild(el("div", i === a.subs.length - 1 ? "tee" : "elbow"));
+      sub.appendChild(lines);
+      const sd = el("div", "subd");
+      sd.appendChild(droidNode(k.kind, k.state, { scale: 0.27 }));
+      sub.appendChild(sd);
+      const nm = el("div", "row-n");
+      nm.textContent = k.name;
+      sub.appendChild(nm);
+      sub.appendChild(lamp(t[k.state], k.state === "working" ? 520 : 0));
+      drawn.push(sub);
+    }
+  };
+  const groups = [];
+  const pinned = AGENTS.filter((a) => a.pinned);
+  if (pinned.length) groups.push({ label: "Pinned berths", pin: true, members: pinned });
+  for (const a of AGENTS) {
+    if (a.pinned) continue;
+    const rank = { blocked: 4, done: 3, working: 2, idle: 1 }[a.state];
+    const label = { 4: "Needs you", 3: "Done", 2: "Working", 1: "Idle" }[rank];
+    if (groups.at(-1)?.label === label) groups.at(-1).members.push(a);
+    else groups.push({ label, status: a.state, members: [a] });
   }
+  for (const g of groups) {
+    const gh = el("div", "grouph");
+    if (g.status) gh.appendChild(lamp(t[g.status], 0));
+    if (g.pin) {
+      const p = el("span", "pinmark on");
+      p.textContent = "\u2363";
+      gh.appendChild(p);
+    }
+    const lab = el("span");
+    lab.textContent = g.label;
+    gh.appendChild(lab);
+    const n = el("span", "gn");
+    n.textContent = String(g.members.length);
+    gh.appendChild(n);
+    gh.appendChild(el("div", "gline"));
+    drawn.push(gh);
+    for (const a of g.members) bayRow(a);
+  }
+  list.append(...drawn);
   box.appendChild(list);
+  return box;
+}
+
+// The depot: a drawer on the right edge of the work area that shows only its
+// edge strip until the pointer comes near, like the layout's `peek` block.
+function depotPanel() {
+  const t = DATA.themes[state.appearance];
+  const box = el("div", "depot");
+  const order = { blocked: 4, done: 3, working: 2, idle: 1 };
+  const list = [...AGENTS].sort((a, b) => order[b.state] - order[a.state]);
+  const head = el("div", "grouph depothead");
+  head.appendChild(Object.assign(document.createElement("span"), { textContent: "DEPOT" }));
+  const n = el("span", "gn");
+  n.textContent = String(list.length);
+  head.appendChild(n);
+  head.appendChild(el("div", "gline"));
+  box.appendChild(head);
+  for (const a of list) {
+    const r = el("div", "row deprow");
+    const info = el("div", "dinfo");
+    const top = el("div", "dtop");
+    top.textContent = a.name;
+    const sub = el("div", "dsub");
+    sub.textContent = [a.space, a.state === "blocked" ? "needs you" : ""].filter(Boolean).join(" \u00b7 ");
+    sub.style.fontSize = "10.5px";
+    info.appendChild(top);
+    info.appendChild(sub);
+    r.appendChild(info);
+    const d = el("div", "depd");
+    d.appendChild(droidNode(a.kind, a.state, { scale: 0.42, oy: -1 }));
+    r.appendChild(d);
+    r.appendChild(lamp(t[a.state], a.state === "working" ? 520 : a.state === "blocked" ? 300 : 0));
+    box.appendChild(r);
+  }
   return box;
 }
 
@@ -554,6 +647,7 @@ function buildNode(node) {
   } else if (c?.tab) {
     s.display = "flex";
     e.appendChild(terminalMock());
+    for (const f of node.floating ?? []) e.appendChild(depotPanel());
   } else if (c?.mod === "droids-spaces") e.appendChild(spacesPanel());
   else if (c?.mod === "droids-tabs") e.appendChild(tabBar());
   else if (c?.mod === "droids-files") e.appendChild(state.panel === "files" ? filesPanel() : el("div", "hidden"));
@@ -759,6 +853,24 @@ body[data-appearance=light] .btn{border-color:#b9ae9a;color:#3a4450}
 #stageWrap{display:flex;justify-content:center;padding:0 20px 30px}
 #stage{transform-origin:top center}
 .hidden{display:none}
+.depot{position:absolute;right:8px;top:50%;width:244px;transform:translate(198px,-50%);transition:transform .22s ease-out;background:var(--pop);border:1px solid var(--line);border-radius:12px;padding:5px;box-shadow:0 18px 46px rgba(0,0,0,.45);z-index:5}
+.depot:hover{transform:translate(0,-50%)}
+.deprow{height:40px}
+.deprow .dtop{font-size:11.5px}
+.depd{width:22px;height:28px;flex:none;position:relative}
+.dright{display:flex;align-items:center;gap:7px;flex:none}
+.fold{font-size:13px;opacity:.6;padding:0 2px}
+.pinmark{font-size:12px;opacity:.35;line-height:1}
+.pinmark.on{opacity:1;color:${"accent"}}
+.bay.pinned{outline:1px solid transparent}
+.grouph{display:flex;align-items:center;gap:6px;height:26px;padding:0 8px;font-size:11px;color:var(--muted)}
+.grouph .gn{color:var(--dim)}
+.grouph .gline{flex:1;border-bottom:1px solid var(--line);height:0}
+.subrow{height:26px;font-size:12px}
+.subrow .treelines{display:flex;flex:none}
+.subrow .treelines div{width:9px;height:16px;margin-right:4px;border-left:1.5px solid var(--line)}
+.subrow .treelines .elbow{border-bottom:1.5px solid var(--line);border-bottom-left-radius:6px}
+.droid{position:relative;flex:none}
 .window{display:flex;position:relative;width:1320px;height:840px;border-radius:12px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.55);font-size:13px}
 .node{position:relative;min-width:0;min-height:0}
 .node.lay-block{display:flex;flex-direction:column}

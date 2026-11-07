@@ -53,11 +53,26 @@ export const KINDS = [
 
 export const kindOf = (id) => KINDS.find((k) => k.id === id) ?? KINDS[KINDS.length - 1];
 
-// program.key / agent.app -> droid kind. Unknown agents get the service droid.
+// A name is either already a droid kind ("probe") or something that identifies
+// the agent: program.key ("codex"), the agent's own report ("claude-code"), or
+// a program name ("Claude Code"). Accept both, so callers never have to care.
+export function kindId(name) {
+  return KINDS.some((k) => k.id === name) ? name : matchKind(name);
+}
+
+const norm = (s) => String(s ?? "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "");
+const has = (s, m) => s === m || s.startsWith(m + "-") || s.endsWith("-" + m) || s.includes("-" + m + "-");
+
+// program.key / agent.app -> droid kind. Exact and hyphen-bounded matches first,
+// so "pi" claims "pi" and "pi-code" but not "openpi"; only longer names (4+,
+// e.g. "gemini" in "gemini-cli") are allowed to match loosely inside a word.
+// Anything unknown gets the service droid.
 export function matchKind(name) {
-  const s = String(name ?? "").toLowerCase();
+  const s = norm(name);
   if (!s) return "generic";
-  for (const k of KINDS) if (k.match.some((m) => s === m || s.includes(m))) return k.id;
+  for (const k of KINDS) if (k.match.some((m) => norm(m) === s)) return k.id;
+  for (const k of KINDS) if (k.match.some((m) => has(s, norm(m)))) return k.id;
+  for (const k of KINDS) if (k.match.some((m) => norm(m).length >= 4 && s.includes(norm(m)))) return k.id;
   return "generic";
 }
 
@@ -132,78 +147,109 @@ function sweeper(x, y, s, range, state, color) {
 
 // ---- the droids
 
-// R-unit astromech: dome, cylider body, three legs, antenna. Claude Code.
+// R-unit astromech: dome, cylinder body, antenna. Claude Code.
+// Standing on its three legs when it is waiting, done or shouting; when it
+// works it tucks the side legs and rolls on its centre wheel — the wheel's
+// four marks swing in opposite phases, which reads as turning.
 function astromech(state, P, A) {
   const working = state === "working";
   const idle = state === "idle";
   const out = [];
-  out.push(shadow(11, 34, 68, P, false));
   // antenna
   out.push(b(45, 3, 1.6, 10, P.metal));
   out.push(b(43.6, 1, 4, 4, working || state === "blocked" ? A.p1 : P.metal, { r: 2, anim: working ? pulse(600, 0.3, 1) : null }));
   // dome
   out.push(b(13, 9, 30, 17, P.hull, { rt: 15, bd: [1, P.hullShade] }));
   out.push(b(13, 21, 30, 3.5, P.hullShade, { op: 0.9 }));
-  out.push(b(17, 12, 8, 1.6, P.hullDark, { op: 0.5 }));
+  out.push(b(17, 12, 9, 1.6, P.hullDark, { op: 0.45 }));
+  out.push(b(35, 12, 4, 1.6, P.hullDark, { op: 0.3 }));
   // holo eye, sweeping when working
   out.push(b(17, 14, 12, 7, P.holoDim, { r: 3.5 }));
   out.push(sweeper(19, 15.5, 4, 6, state, A.eye));
-  out.push(b(32, 13, 5, 5, P.metal, { r: 2.5 }));
-  out.push(lamp(33.2, 14.2, 2.6, state, P));
-  // neck
+  out.push(b(32, 13, 5.5, 5.5, P.metal, { r: 2.75 }));
+  out.push(lamp(33.4, 14.4, 2.7, state, P));
+  // neck and body
   out.push(b(22, 26, 12, 4, P.metal));
-  // body
   out.push(b(10, 29, 36, 26, P.hull, { r: 5, bd: [1, P.hullShade] }));
-  out.push(b(13.5, 32.5, 10, 9, A.p1, { r: 2 }));
-  out.push(b(13.5, 43, 10, 9, A.p2, { r: 2, op: idle ? 0.5 : 1 }));
+  out.push(b(13.5, 32.5, 10, 9, A.p1, { r: 2, bd: [1, P.hullDark] }));
+  out.push(b(13.5, 43, 10, 9, A.p2, { r: 2, op: idle ? 0.5 : 1, bd: [1, P.hullDark] }));
   out.push(b(26, 32.5, 17, 2, P.hullShade, { op: 0.7 }));
   out.push(lamp(31, 38, 6, state, P));
   out.push(b(26, 47, 17, 2, P.metal, { op: 0.8 }));
   out.push(b(26, 50.5, 12, 2, P.metal, { op: 0.55 }));
-  // legs
+
+  if (working) {
+    out.push(shadow(11, 34, 68, P, true));
+    // side legs folded up against the hull, one higher than the other
+    out.push(b(3, 32, 7, 12, P.hullShade, { r: 3, bd: [1, P.hullDark], anim: { p: "top", from: 32, to: 30, period: 620, easing: EASE } }));
+    out.push(b(2, 43, 9, 3.5, P.metal, { r: 1 }));
+    out.push(b(46, 32, 7, 12, P.hullShade, { r: 3, bd: [1, P.hullDark], anim: { p: "top", from: 30, to: 32, period: 620, easing: EASE } }));
+    out.push(b(45, 43, 9, 3.5, P.metal, { r: 1 }));
+    // the wheel
+    out.push(b(19, 50, 18, 18, P.metal, { r: 9, bd: [1.5, P.hullDark] }));
+    out.push(b(24, 55, 8, 8, P.hullShade, { r: 4 }));
+    out.push(b(26, 57, 4, 4, P.deck, { r: 2 }));
+    // four marks swinging in opposite phases: the wheel is turning
+    out.push(b(20.5, 56, 2.5, 5, P.hull, { op: 0.75, anim: { p: "top", from: 53, to: 61, period: 900, easing: "linear" } }));
+    out.push(b(33, 56, 2.5, 5, P.hull, { op: 0.75, anim: { p: "top", from: 61, to: 53, period: 900, easing: "linear" } }));
+    out.push(b(26, 51.5, 5, 2.5, P.hull, { op: 0.6, anim: { p: "left", from: 23, to: 28, period: 900, easing: "linear" } }));
+    out.push(b(26, 64, 5, 2.5, P.hull, { op: 0.6, anim: { p: "left", from: 28, to: 23, period: 900, easing: "linear" } }));
+    // speed lines level with the wheel, so it reads as rolling
+    out.push(b(1, 55, 12, 1.6, P.hullShade, { r: 1, op: 0.35, anim: pulse(320, 0.08, 0.4) }));
+    out.push(b(3, 63, 9, 1.6, P.hullShade, { r: 1, op: 0.3, anim: pulse(260, 0.06, 0.34) }));
+    // weld spark off the tool arm
+    out.push(b(49, 40, 5, 2, P.metal));
+    out.push(b(50, 42, 4, 4, P.signal, { r: 2, anim: pulse(180, 0.15, 1) }));
+    return out;
+  }
+
+  out.push(shadow(11, 34, 68, P, false));
+  // standing: three legs, feet flat
   out.push(b(3, 33, 7, 21, P.hullShade, { r: 3, bd: [1, P.hullDark] }));
   out.push(b(2, 53, 9, 4, P.metal, { r: 1 }));
   out.push(b(46, 33, 7, 21, P.hullShade, { r: 3, bd: [1, P.hullDark] }));
   out.push(b(45, 53, 9, 4, P.metal, { r: 1 }));
   out.push(b(25, 55, 6, 10, P.metal));
   out.push(b(21.5, 64, 13, 4, P.hullDark, { r: 1.5 }));
-  // working: a weld spark off the side arm
-  if (working) {
-    out.push(b(49, 40, 5, 2, P.metal));
-    out.push(b(50, 42, 4, 4, P.signal, { r: 2, anim: pulse(180, 0.15, 1) }));
-  }
   return out;
 }
 
-// Viper probe: hovering dark pod, big iris, three claws. Codex.
+// Viper probe: a hovering dark orb with a wide sensor band and a bright iris,
+// stubby side arms and a short tripod. Codex.
 function probe(state, P, A) {
   const idle = state === "idle";
-  const hover = true;
+  const working = state === "working";
   const out = [];
-  out.push(shadow(15, 26, 66, P, hover));
-  out.push(b(27, 4, 2, 8, P.metal));
-  out.push(b(25.5, 2, 5, 4, idle ? P.metal : A.p1, { r: 2, anim: state === "working" ? pulse(700, 0.3, 1) : null }));
-  // shell
-  out.push(b(11, 12, 34, 32, A.shell ?? P.metal, { r: 16, bd: [1, P.hullDark] }));
-  out.push(b(15, 16, 26, 9, P.hull, { r: 4.5, op: 0.12 }));
-  // eye housing + iris
-  out.push(b(17, 23, 22, 13, P.deck, { r: 6.5, bd: [1, P.hullDark] }));
-  const iris = state === "working"
-    ? { p: "width", from: 8, to: 12, period: 900, easing: EASE }
+  out.push(shadow(16, 24, 66, P, true));
+  // neck ring and mast
+  out.push(b(22, 7, 12, 5, P.metal, { r: 2.5, bd: [1, P.hullDark] }));
+  out.push(b(27, 2, 2, 6, P.metal));
+  out.push(b(25.5, 0, 5, 4, idle ? P.metal : A.p1, { r: 2, anim: working ? pulse(700, 0.3, 1) : null }));
+  // shell: one big orb
+  out.push(b(8, 11, 40, 34, A.shell ?? P.metal, { r: 17, bd: [1, P.hullDark] }));
+  out.push(b(14, 15, 28, 8, P.hull, { r: 4, op: 0.14 }));
+  out.push(b(12, 36, 32, 3, P.hullDark, { r: 1.5, op: 0.5 }));
+  // sensor band across the face + iris
+  out.push(b(13, 20, 30, 14, P.deck, { r: 7, bd: [1, P.hullDark] }));
+  const iris = working
+    ? { p: "width", from: 10, to: 15, period: 900, easing: EASE }
     : state === "blocked" ? { p: "opacity", from: 0.3, to: 1, period: 320, easing: EASE } : null;
-  out.push(b(24, 26, 8, 7, idle ? P.dim : A.eye, { r: 3.5, anim: iris, op: idle ? 0.45 : 1 }));
-  out.push(b(20, 25, 2.5, 9, P.metal, { op: 0.8 }));
-  out.push(b(34, 25, 2.5, 9, P.metal, { op: 0.8 }));
-  // claws
-  const lift = state === "blocked" ? -5 : 0;
-  out.push(b(13, 43 + lift, 3, 12, P.metal, { anim: state === "working" ? { p: "top", from: 43, to: 39, period: 620, easing: EASE } : null }));
-  out.push(b(11, 54 + lift, 7, 2.5, P.hullDark, { r: 1 }));
-  out.push(b(26.5, 44, 3, 14, P.metal));
-  out.push(b(24.5, 57, 7, 2.5, P.hullDark, { r: 1 }));
-  out.push(b(40, 43, 3, 12, P.metal, { anim: state === "working" ? { p: "top", from: 43, to: 38, period: 700, easing: EASE } : null }));
-  out.push(b(38, 54, 7, 2.5, P.hullDark, { r: 1 }));
-  // thruster glow under the shell
-  if (!idle) out.push(b(22, 43, 12, 3, A.p1, { r: 1.5, op: 0.5, anim: pulse(420, 0.2, 0.7) }));
+  out.push(b(23, 23.5, 10, 7.5, idle ? P.dim : A.eye, { r: 3.75, anim: iris, op: idle ? 0.45 : 1 }));
+  out.push(b(16, 22, 2.5, 10, P.metal, { op: 0.75 }));
+  out.push(b(41.5, 22, 2.5, 10, P.metal, { op: 0.75 }));
+  // stubby side arms
+  const lift = state === "blocked" ? -4 : 0;
+  out.push(b(4, 22 + lift, 5, 10, P.metal, { r: 2.5, bd: [1, P.hullDark], anim: working ? { p: "top", from: 20, to: 24, period: 640, easing: EASE } : null }));
+  out.push(b(47, 22 + lift, 5, 10, P.metal, { r: 2.5, bd: [1, P.hullDark], anim: working ? { p: "top", from: 24, to: 20, period: 640, easing: EASE } : null }));
+  // short tripod under the orb
+  out.push(b(15, 44, 4, 8, P.metal, { r: 1.5 }));
+  out.push(b(13.5, 51, 7, 3, P.hullDark, { r: 1.5 }));
+  out.push(b(26, 45, 4, 9, P.metal, { r: 1.5 }));
+  out.push(b(24.5, 53, 7, 3, P.hullDark, { r: 1.5 }));
+  out.push(b(37, 44, 4, 8, P.metal, { r: 1.5 }));
+  out.push(b(35.5, 51, 7, 3, P.hullDark, { r: 1.5 }));
+  // drive glow under the shell
+  if (!idle) out.push(b(21, 43, 14, 3, A.p1, { r: 1.5, op: 0.5, anim: pulse(420, 0.2, 0.7) }));
   return out;
 }
 
@@ -217,6 +263,8 @@ function pod(state, P, A) {
   // body
   out.push(b(13, 15, 30, 28, P.hull, { r: 14, bd: [1, P.hullShade] }));
   out.push(b(17, 19, 22, 6, P.hull, { r: 3, op: 0.5 }));
+  out.push(b(25, 11, 6, 5, P.hullShade, { r: 2, bd: [1, P.hullDark] })); // dorsal fin
+  out.push(b(16, 38, 24, 2, P.hullShade, { r: 1, op: 0.8 }));
   // visor
   out.push(b(17, 24, 22, 9, P.deck, { r: 4.5 }));
   out.push(sweeper(20, 26.5, 5, 12, state, A.eye));
@@ -239,33 +287,36 @@ function protocol(state, P, A) {
   const out = [];
   out.push(shadow(13, 30, 68, P, false));
   // head
-  out.push(b(25, 4, 6, 4, A.p2, { r: 2 }));
+  out.push(b(25, 3, 6, 5, A.p2, { r: 2 }));
   out.push(b(18, 8, 20, 14, A.p1, { r: 4, bd: [1, A.p2] }));
   const eyeOpen = idle ? 0.35 : 1;
   out.push(b(22, 12.5, 4.5, 4.5, P.deck, { r: 2.25 }));
   out.push(b(29.5, 12.5, 4.5, 4.5, P.deck, { r: 2.25 }));
   out.push(b(23, 13.5, 2.5, 2.5, A.eye, { r: 1.25, op: eyeOpen, anim: state === "working" ? pulse(1100, 0.4, 1) : null }));
   out.push(b(30.5, 13.5, 2.5, 2.5, A.eye, { r: 1.25, op: eyeOpen, anim: state === "working" ? pulse(1100, 0.4, 1) : null }));
-  out.push(b(21, 20, 14, 1.6, A.p2, { op: 0.7 }));
+  out.push(b(21, 19.5, 14, 2, A.p2, { op: 0.7 }));
   out.push(b(26, 22, 4, 3, P.metal));
-  // torso
-  out.push(b(16, 25, 24, 22, A.p1, { r: 4, bd: [1, A.p2] }));
-  out.push(b(19, 28, 18, 2, A.p2, { op: 0.6 }));
-  // crescent moon: navy disc, gold disc over it, leaving a crescent
-  out.push(b(25, 31, 12, 12, A.moon ?? P.deck, { r: 6 }));
-  out.push(b(28.5, 32, 11, 11, A.p1, { r: 5.5 }));
-  out.push(lamp(18, 42, 4, state, P));
+  // shoulders, chest, waist, hips: a tapered humanoid frame
+  out.push(b(12, 25, 8, 6, A.p2, { r: 3, bd: [1, A.p1] }));
+  out.push(b(36, 25, 8, 6, A.p2, { r: 3, bd: [1, A.p1] }));
+  out.push(b(17, 24, 22, 15, A.p1, { r: 4, bd: [1, A.p2] }));
+  // crescent moon on the chest: navy disc, gold disc over it, leaving a crescent
+  out.push(b(24.5, 26.5, 11, 11, A.moon ?? P.deck, { r: 5.5 }));
+  out.push(b(27.5, 27.5, 10, 10, A.p1, { r: 5 }));
+  out.push(lamp(18.5, 34, 4, state, P));
+  out.push(b(20, 39, 16, 8, A.p1, { r: 3, bd: [1, A.p2] }));
+  out.push(b(18, 47, 20, 5, A.p2, { r: 2 }));
   // arms: down, raised (done), one waving (blocked)
-  out.push(b(10, 26, 4, 18, A.p2, { r: 2 }));
-  out.push(b(9, 44, 6, 3.5, P.metal, { r: 1 }));
-  const armY = up ? 16 : waving ? 14 : 26;
-  out.push(b(42, armY, 4, up || waving ? 14 : 18, A.p2, { r: 2, anim: waving ? { p: "top", from: 14, to: 19, period: 340, easing: EASE } : null }));
-  out.push(b(41, up || waving ? armY - 4 : 44, 6, 3.5, P.metal, { r: 1 }));
+  out.push(b(10, 30, 4, 15, A.p2, { r: 2 }));
+  out.push(b(9, 45, 6, 3.5, P.metal, { r: 1 }));
+  const armY = up ? 16 : waving ? 14 : 30;
+  out.push(b(42, armY, 4, up || waving ? 14 : 15, A.p2, { r: 2, anim: waving ? { p: "top", from: 14, to: 19, period: 340, easing: EASE } : null }));
+  out.push(b(41, up || waving ? armY - 4 : 45, 6, 3.5, P.metal, { r: 1 }));
   // legs
-  out.push(b(20, 47, 6, 16, A.p2, { r: 2 }));
-  out.push(b(30, 47, 6, 16, A.p2, { r: 2 }));
-  out.push(b(17, 62, 10, 4, P.metal, { r: 1.5 }));
-  out.push(b(29, 62, 10, 4, P.metal, { r: 1.5 }));
+  out.push(b(20, 52, 6, 13, A.p2, { r: 2 }));
+  out.push(b(30, 52, 6, 13, A.p2, { r: 2 }));
+  out.push(b(17, 64, 10, 4, P.metal, { r: 1.5 }));
+  out.push(b(29, 64, 10, 4, P.metal, { r: 1.5 }));
   return out;
 }
 
@@ -286,6 +337,8 @@ function utility(state, P, A) {
   // body
   out.push(b(11, 23, 34, 27, P.hull, { r: 4, bd: [1, P.hullShade] }));
   out.push(b(11, 23, 34, 5, A.p1, { rt: 4 }));
+  // the GNK's bandolier across the amber band
+  for (let i = 0; i < 5; i++) out.push(b(14 + i * 7, 24, 3.5, 3.5, P.deck, { r: 0.8, op: 0.85 }));
   out.push(b(15, 31, 16, 2.4, P.metal));
   out.push(b(15, 36, 16, 2.4, P.metal));
   out.push(b(15, 41, 16, 2.4, P.metal));

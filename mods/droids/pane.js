@@ -4,7 +4,7 @@
 import { div, svg } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { panes, props, run, theme, home } from "herdr";
-import { droid, lamp, chip, matchKind } from "./kit.js";
+import { droid, lamp, chip, kindId } from "./kit.js";
 
 // Icons live in this mod's folder so the layout travels on its own.
 const glyph = (t, name, size = 14) => svg(`mods/droids/icons/${name}.svg`).size(size).flex_none().text_color(t.dim);
@@ -33,7 +33,7 @@ export function renderPane(cx, self) {
     .on_hover((hovered, cx) => { self.hovered = hovered ? pane : null; cx.notify(); })
     .on_click(() => run("pane.focus", { pane }))
     .child(p.program?.agent
-      ? droid(t, matchKind(p.app ?? p.program.key), st ?? "idle", { w: 20, h: 24, scale: 0.32, oy: -1 })
+      ? droid(t, kindId(p.app ?? p.program.key), st ?? "idle", { w: 20, h: 24, scale: 0.32, oy: -1 })
       : div().w(20).flex_none().flex().items_center().justify_center().text_color(t.dim).child("▮"))
     .child(div().flex_none().truncate().max_w(240).font_medium().text_color(t.foreground).child(name))
     .child(div().flex_1().truncate().text_color(t.dim).child(folder(p.cwd)))

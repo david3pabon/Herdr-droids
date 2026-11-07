@@ -7,7 +7,7 @@
 import { div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { settings } from "herdr";
-import { build, scale as scaleTree, palette as specPalette, matchKind, kindOf, STATES } from "./droids.js";
+import { build, scale as scaleTree, palette as specPalette, kindId, matchKind, kindOf, STATES } from "./droids.js";
 
 // Theme colors with fallbacks: custom names (hull, holo, deck, ...) come from
 // themes/droids-*.json; if a theme lacks one, the fallback keeps the look.
@@ -71,7 +71,7 @@ export function node(spec) {
 // sits in its own positioned frame so a hop or a lean (.loop on top/left)
 // moves the droid inside the box instead of moving the box.
 export function droid(t, kind, state, o = {}) {
-  const spec = scaleTree(build(matchKind(kind), state, paletteOf(t)), o.scale ?? 1);
+  const spec = scaleTree(build(kindId(kind), state, paletteOf(t)), o.scale ?? 1);
   return droidSpec(spec, o);
 }
 
@@ -138,4 +138,5 @@ export function stars(t, count = 22, tint) {
   return out;
 }
 
-export { matchKind, kindOf, STATES };
+// kindId() accepts a kind id or an agent name (program.key / app / program name).
+export { kindId, matchKind, kindOf, STATES };
