@@ -120,3 +120,12 @@ started here too. Then: public repo, topic `herdr-layout`.
   whole pane list into JS, so keep it that way.
 - The bays are 62px tall — that is the price of a legible droid. Narrow the
   sidebar under 170px and they collapse to a rail of small droids and lamps.
+
+## License
+
+MIT — see [LICENSE](LICENSE). Herdr itself, its shipped layouts, mods and icons
+are not part of this repo: the four `droids-*` mods are copies of Herdr's,
+restyled, and the layout depends on Herdr being installed.
+
+Star Wars is a trademark of Lucasfilm Ltd.; this is an affectionate fan project
+with no affiliation.
