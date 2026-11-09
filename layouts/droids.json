@@ -5,7 +5,7 @@
   "traffic_lights": [16, 18],
   "theme": { "light": "droids-light", "dark": "droids-dark" },
   "background": "canvas",
-  "ui_font": "Geist",
+  "ui_font": ".SystemUIFont",
   "font": "JetBrains Mono",
   "font_size": 14,
   "terminal_padding": [14, 12],

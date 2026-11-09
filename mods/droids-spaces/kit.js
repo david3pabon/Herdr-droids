@@ -84,15 +84,32 @@ export function droidSpec(spec, o = {}) {
 
 // ---- shared panel parts
 
-// A tiny round status light; blinks while something is happening.
+// A tiny round status light with a holo glow; blinks while something is happening.
 export function lamp(t, status, size = 7) {
   const color = t[status] ?? t.idle;
-  let e = div().size(size).flex_none().rounded(size / 2);
-  if (status === "idle") return e.border(1.5).border_color(color);
-  e = e.bg(color);
-  if (status === "working") return e.loop("opacity", { from: 0.35, to: 1, period: 520 });
-  if (status === "blocked") return e.loop("opacity", { from: 0.2, to: 1, period: 300 });
-  return e;
+  if (status === "idle") return div().size(size).flex_none().rounded(size / 2).border(1.5).border_color(color);
+  let core = div().size_full().rounded(size / 2).bg(color);
+  if (status === "working") core = core.loop("opacity", { from: 0.35, to: 1, period: 520 });
+  if (status === "blocked") core = core.loop("opacity", { from: 0.2, to: 1, period: 300 });
+  const glow = size * 1.9, off = (size - glow) / 2;
+  return div().relative().size(size).flex_none()
+    .child(div().absolute().left(off).top(off).size(glow).rounded(glow / 2).bg(color).opacity(0.15))
+    .child(core);
+}
+
+// Wide-set capitals, the deck's lettering. GPUI has no letter-spacing, so the
+// gaps are thin spaces between the letters.
+export const tracked = (text, gap = "\u200a") => [...text].join(gap);
+
+// What an agent is working on: its own title when that says something, else
+// the tab's name. Folder paths and "user@host" titles are noise, not tasks.
+const clean = (s) => (s ?? "").replace(/^[^\p{L}\p{N}]+/u, "").trim();
+export function taskOf(tab, lead) {
+  const live = clean(lead?.title ?? tab?.name);
+  const prog = lead?.program?.name;
+  const telling = live && live !== prog && !/^[~/]|^[A-Za-z]:\\/.test(live) && !live.includes("@") && live.toLowerCase() !== lead?.program?.key;
+  if (!tab?.named) return telling ? live : prog ?? live;
+  return live;
 }
 
 export function chip(t, text, color) {
@@ -104,8 +121,8 @@ export function chip(t, text, color) {
 
 // Panel header: SECTION + a quiet caption, something optional on the right.
 export function head(t, label, sub, right, pad = 16) {
-  return h_flex().px(pad).h(40).pt(12).pb(4).flex_none().gap(8).items_center()
-    .child(div().text_size(11.5).font_semibold().text_color(t.muted).child(label))
+  return h_flex().px(pad).h(40).pt(10).pb(4).flex_none().gap(8).items_center().border_b(1).border_color(t.border)
+    .child(div().text_size(11.5).font_semibold().text_color(t.foreground).child(tracked(label)))
     .when(Boolean(sub), (el) => el.child(div().text_size(10.5).text_color(t.dim).child(sub)))
     .child(div().flex_1())
     .when(Boolean(right), (el) => el.child(right));

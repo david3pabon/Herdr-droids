@@ -6,7 +6,7 @@
 import { div, svg } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { agents, terminals, panes, focused, spaces, run, theme, shared, setShared, setAgentOrder, layout } from "herdr";
-import { droid, lamp, chip, head, isDark, STATES } from "./kit.js";
+import { droid, lamp, chip, head, taskOf, STATES } from "./kit.js";
 import { kindId, kindOf } from "./droids.js";
 
 const RANK = { blocked: 4, done: 3, working: 2, idle: 1 };
@@ -23,8 +23,6 @@ const find = (node, id) => {
   return null;
 };
 const narrow = () => (find(layout(), "sidebar")?.size?.px ?? Infinity) < 170;
-
-const clean = (s) => (s ?? "").replace(/^[^\p{L}\p{N}]+/u, "").trim();
 
 function duration(ms) {
   if (!ms) return "";
@@ -52,16 +50,6 @@ function leadPanes(all) {
     if (!cur || (!cur.program?.agent && (p.program?.agent || (!cur.focused && p.focused)))) leads.set(p.tab, p);
   }
   return leads;
-}
-
-// What the agent is working on: its own title when that says something, else
-// the tab's name. Folder paths and "user@host" titles are noise, not tasks.
-function taskOf(tab, lead) {
-  const live = clean(lead?.title ?? tab?.name);
-  const prog = lead?.program?.name;
-  const telling = live && live !== prog && !/^[~/]|^[A-Za-z]:\\/.test(live) && !live.includes("@") && live.toLowerCase() !== lead?.program?.key;
-  if (!tab?.named) return telling ? live : prog ?? live;
-  return live;
 }
 
 export function renderAgents(cx, self) {
@@ -165,25 +153,17 @@ export function renderAgents(cx, self) {
         .id(`bay-${a.address}`)
         .h(62).flex_none().px(8).mb(2).gap(10).items_center().rounded(9)
         .cursor_pointer()
-        .when(a.focused, (el) => el.bg(t.selected))
+        .when(a.focused, (el) => el.bg(t.raised))
         .hover((s) => s.bg(t.hover))
         .on_hover((on, cx) => { self.hovered = on ? a.address : (self.hovered === a.address ? null : self.hovered); cx.notify(); })
         .on_click(() => run("pane.focus", { pane: a.pane }))
-        // the bay: a plinth the droid stands in
-        .child(
-          div().relative().flex_none().w(40).h(50).rounded(7)
-            .bg(isDark() ? "#ffffff08" : "#00000008")
-            .border(1).border_color(t.border)
-            .when(a.pinned, (el) => el.border_color(t.accent))
-            .child(droid(t, kind, a.status, { w: 40, h: 50, scale: 0.68 }))
-        )
+        .child(droid(t, kind, a.status, { w: 40, h: 50, scale: 0.68 }))
         .child(
           v_flex().flex_1().min_w(0).gap(2)
             .child(
               h_flex().gap(6).items_center()
                 .child(div().min_w(0).truncate().text_size(13).font_semibold()
                   .text_color(idle ? t.muted : t.foreground).child(a.program?.name || kindOf(kind).name))
-                .when(a.pinned, (el) => el.child(div().text_size(10).text_color(t.accent).child("pinned")))
             )
             .child(div().text_size(11.2).truncate().text_color(idle ? t.dim : t.muted).child(task))
             .child(
@@ -236,13 +216,13 @@ export function renderAgents(cx, self) {
     .hover((s) => s.bg(t.hover).text_color(t.foreground))
     .tooltip(`Sort: ${sort.label} — click to change`)
     .on_click(() => setShared("droids.sort", sort.id === "priority" ? "space" : "priority"))
-    .child(sort.label);
+    .child("⇅");
 
   const body = collapsed
     ? list.flatMap(row)
     : groups.flatMap((g) => folded.has(g.id) ? [] : [header(g), ...g.members.flatMap(row)]);
 
-  return v_flex().size_full().min_h(0).bg(t.chrome).border_t(1).border_color(t.border).text_size(13)
+  return v_flex().size_full().min_h(0).bg(t.chrome).text_size(13)
     .when(!collapsed, (el) => el.child(head(t, "AGENTS", "droid bays", toggle)))
     .when(!list.length && !collapsed, (el) =>
       el.child(
@@ -250,5 +230,5 @@ export function renderAgents(cx, self) {
           .child(div().text_size(12).text_color(t.muted).child("No droids in the bays yet."))
           .child(div().text_size(11.5).text_color(t.dim).child("An agent appears here once it reports its status. Start one from a tab's + menu, or in a terminal.")),
       ))
-    .child(v_flex().id("droids-list").flex_1().min_h(0).px(collapsed ? 3 : 8).pb(8).overflow_y_scrollbar().mode("always").gap(2).children(body));
+    .child(v_flex().id("droids-list").flex_1().min_h(0).px(collapsed ? 3 : 8).pt(6).pb(8).overflow_y_scrollbar().mode("always").gap(2).children(body));
 }

@@ -141,6 +141,9 @@ function holo(label, sub, right, left) {
 function brand() {
   const t = DATA.themes[state.appearance];
   const w = el("div", "brand");
+  const lights = el("div", "lights");
+  for (const c of ["#ff5f57", "#febc2e", "#28c840"]) lights.appendChild(el("i", "", { background: c }));
+  w.appendChild(lights);
   const stars = el("div", "stars");
   for (let i = 0; i < 26; i++) {
     const s = el("div", "star");
@@ -164,6 +167,12 @@ function brand() {
   txt.appendChild(a);
   txt.appendChild(b);
   w.appendChild(txt);
+  w.appendChild(el("div", "fill"));
+  for (const s of ["⌕", "▯"]) {
+    const icon = el("div", "iconbtn sm");
+    icon.textContent = s;
+    w.appendChild(icon);
+  }
   return w;
 }
 
@@ -322,11 +331,17 @@ function footer() {
   const t = DATA.themes[state.appearance];
   const f = el("div", "footer");
   const d = el("div", "foot-line");
-  d.innerHTML = `<span style="color:${t.holo}">◈</span> 5 droids docked · 1 bay free`;
+  d.innerHTML = `<span style="color:${t.holo}">◈</span> ${AGENTS.length} droids docked`;
   const k = el("div", "foot-keys");
-  k.innerHTML = `<b>⌃⇧L</b> layout · <b>⌃⇧B</b> rail`;
-  f.appendChild(d);
-  f.appendChild(k);
+  k.innerHTML = `<b>⌘⇧L</b> layout · <b>⌘B</b> rail`;
+  const text = el("div", "foot-text");
+  text.append(d, k);
+  f.appendChild(text);
+  for (const s of ["⚙", "+"]) {
+    const icon = el("div", "iconbtn sm");
+    icon.textContent = s;
+    f.appendChild(icon);
+  }
   return f;
 }
 
@@ -426,7 +441,7 @@ function terminalMock() {
   st.style.color = t[focus.state];
   st.style.borderColor = t[focus.state] + "55";
   head.appendChild(st);
-  for (const s of ["⧉", "⤢", "✕"]) {
+  for (const s of ["◫", "⬓", "⤢", "✕"]) {
     const b = el("div", "iconbtn sm");
     b.textContent = s;
     head.appendChild(b);
@@ -570,6 +585,7 @@ function statusBar() {
   const needs = AGENTS.filter((a) => a.state === "blocked").length;
   b.innerHTML = `<span class="sl">◈ this machine</span>
     <span class="sl">⌥ main</span>
+    <span class="sl" style="display:flex;gap:4px;align-items:center">${[...AGENTS].sort((a, b) => ({ blocked: 4, done: 3, working: 2, idle: 1 })[b.state] - ({ blocked: 4, done: 3, working: 2, idle: 1 })[a.state]).map((a) => `<i style="width:6px;height:6px;border-radius:3px;background:${t[a.state]}"></i>`).join("")}</span>
     <span class="sl">${AGENTS.length} droids${needs ? ` · <b style="color:${t.blocked}">${needs} needs you</b>` : ""}</span>
     <span class="fill"></span>
     <span class="sl dim">⌘K  commands</span>`;
@@ -742,7 +758,7 @@ function draw() {
   kfSeq = 0;
   frameTexts.length = 0;
   document.documentElement.style.setProperty("--fg", t.foreground);
-  document.documentElement.style.setProperty("--ui", "'Geist','Inter',system-ui,sans-serif");
+  document.documentElement.style.setProperty("--ui", "-apple-system,system-ui,sans-serif");
   document.documentElement.style.setProperty("--mono", "'JetBrains Mono',ui-monospace,monospace");
   document.documentElement.style.setProperty("--line", t.border);
   document.documentElement.style.setProperty("--muted", t.muted);
@@ -872,7 +888,9 @@ body[data-appearance=light] .btn{border-color:#b9ae9a;color:#3a4450}
 .window{display:flex;position:relative;width:1320px;height:840px;border-radius:12px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.55);font-size:13px}
 .node{position:relative;min-width:0;min-height:0}
 .node.lay-block{display:flex;flex-direction:column}
-.brand{position:relative;display:flex;align-items:center;gap:10px;padding:0 16px;height:100%;overflow:hidden}
+.brand{position:relative;display:flex;align-items:center;gap:8px;padding:0 10px 0 82px;height:100%;overflow:hidden}
+.lights{position:absolute;left:16px;top:18px;display:flex;gap:8px}
+.lights i{width:12px;height:12px;border-radius:6px}
 .brand-mark{font-size:19px}
 .brand-a{font-weight:700;letter-spacing:.16em;font-size:13px}
 .brand-b{font-size:10.5px;letter-spacing:.04em}
@@ -899,7 +917,8 @@ body[data-appearance=light] .btn{border-color:#b9ae9a;color:#3a4450}
 .dmeta{display:flex;align-items:center;gap:8px;margin-top:4px}
 .chip{font-size:9.8px;padding:1px 6px;border-radius:5px;border:1px solid;letter-spacing:.03em}
 .dsp{font-size:10.5px;opacity:.55}
-.footer{display:flex;flex-direction:column;justify-content:center;gap:4px;padding:0 16px;font-size:11px}
+.footer{display:flex;align-items:center;gap:4px;padding:0 8px 0 16px;font-size:11px}
+.foot-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .foot-keys{opacity:.6;font-size:10.5px}
 .footer b{font-weight:600}
 .tabbar{display:flex;align-items:center;gap:4px;padding:0 12px;height:100%;overflow:hidden}

@@ -3,7 +3,7 @@
 import { div, svg } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { theme, run, window, layout, spaces, agents, keys, updates, shared, setShared } from "herdr";
-import { stars, c, isDark } from "./kit.js";
+import { stars, c, tracked } from "./kit.js";
 
 const find = (node, id) => {
   if (node?.id === id) return node;
@@ -21,13 +21,17 @@ function toggleSidebar() {
 
 const icon = (t, name, size = 15, color) => svg(`mods/droids/icons/${name}.svg`).size(size).flex_none().text_color(color ?? t.muted);
 
-// What the palette key actually is on this machine, so the hint never lies.
-function paletteHint() {
+// What a key actually is on this machine, so the hints never lie.
+function keyFor(action) {
   const mac = window()?.platform === "macos";
   const mod = { cmd: mac ? "⌘" : "Ctrl+", ctrl: mac ? "⌃" : "Ctrl+", shift: mac ? "⇧" : "Shift+", alt: mac ? "⌥" : "Alt+", option: mac ? "⌥" : "Alt+" };
-  const b = keys().find((k) => k.section === "global" && k.action === "app.palette");
+  const b = keys().find((k) => k.section === "global" && k.action === action);
   const parts = b && b.keys.endsWith("--") ? [...b.keys.slice(0, -2).split("-"), "-"] : b?.keys.split("-");
-  const key = parts && parts.map((p) => mod[p.toLowerCase()] ?? p.toUpperCase()).join("");
+  return parts ? parts.map((p) => mod[p.toLowerCase()] ?? p.toUpperCase()).join("") : null;
+}
+
+function paletteHint() {
+  const key = keyFor("app.palette");
   return key ? `${key}  commands` : "commands";
 }
 
@@ -46,11 +50,11 @@ export function renderBrand() {
   return h_flex().size_full().bg(t.chrome).pl(macRoom ? 82 : collapsed ? 8 : 16).pr(10).gap(8).items_center()
     .children(stars(t, 20))
     .when(!collapsed, (el) => el
-      .child(div().text_size(17).flex_none().text_color(holo).child("◈")
+      .child(div().text_size(19).flex_none().text_color(holo).child("◈")
         .loop("opacity", { from: 0.55, to: 1, period: 2600 }))
       .child(v_flex().flex_1().min_w(0).gap(0)
-        .child(div().text_size(13).font_semibold().text_color(t.foreground).child("HERDR"))
-        .child(div().text_size(10).text_color(t.dim).child("droid command"))))
+        .child(div().text_size(13).font_weight(700).text_color(t.foreground).child(tracked("HERDR", "\u2009")))
+        .child(div().text_size(10.5).text_color(t.dim).child("droid command"))))
     .when(!collapsed, (el) => el.child(button("droids-search", "search", () => run("mod.open", { name: "picker" }), "Search spaces, tabs and files")))
     .when(!(collapsed && w?.platform === "macos"), (el) => el.child(button("droids-rail", "sidebar", toggleSidebar, "Fold the sidebar")))
     .when(collapsed, (el) => el.child(
@@ -61,15 +65,28 @@ export function renderBrand() {
 export function renderFooter() {
   const t = theme();
   const collapsed = rail();
-  const row = (id, name, label, dim, action) =>
-    h_flex().id(id).h(24).px(8).gap(9).items_center().rounded(7).cursor_pointer()
-      .text_color(dim ? t.dim : t.muted).hover((s) => s.bg(t.hover).text_color(t.foreground))
-      .child(icon(t, name, 14, dim ? t.dim : t.muted))
-      .when(!collapsed, (el) => el.child(div().text_size(12.5).child(label)));
-  return v_flex().size_full().bg(t.chrome).border_t(1).border_color(t.border).px(8).pt(5).pb(7).gap(2)
-    .child(row("droids-settings", "settings", "Settings", false, () => run("app.settings"))
-      .when(Boolean(updates().app.ready), (el) => el.child(div().size(6).rounded(3).bg(t.accent))))
-    .child(row("droids-machine", "plus", "Add machine", true, () => run("mod.open", { name: "machine-add" })));
+  const n = agents().length;
+  const tool = (id, name, tip, action) =>
+    div().id(id).relative().size(24).flex_none().flex().items_center().justify_center().rounded(6).cursor_pointer()
+      .hover((s) => s.bg(t.hover))
+      .tooltip(tip)
+      .on_click(action)
+      .child(icon(t, name, 14));
+  const tools = [
+    tool("droids-settings", "settings", "Settings", () => run("app.settings"))
+      .when(Boolean(updates().app.ready), (el) => el.child(div().absolute().top(3).right(3).size(5).rounded(3).bg(t.accent))),
+    tool("droids-machine", "plus", "Add machine", () => run("mod.open", { name: "machine-add" })),
+  ];
+  if (collapsed) return v_flex().size_full().bg(t.chrome).border_t(1).border_color(t.border).gap(2).items_center().justify_center().children(tools);
+  const hints = [[keyFor("layout.switch"), "layout"], [keyFor("layout.toggle:sidebar"), "rail"]]
+    .filter(([key]) => key).map(([key, label]) => `${key} ${label}`).join("  ·  ");
+  return h_flex().size_full().bg(t.chrome).border_t(1).border_color(t.border).pl(16).pr(8).gap(4).items_center()
+    .child(v_flex().flex_1().min_w(0).gap(3)
+      .child(h_flex().gap(6).items_center().text_size(11.5).text_color(t.muted)
+        .child(div().flex_none().text_color(c(t, "holo", "#6fd3e8", "#1f7a8c")).child("◈"))
+        .child(div().truncate().child(`${n} droid${n === 1 ? "" : "s"} docked`)))
+      .when(Boolean(hints), (el) => el.child(div().truncate().text_size(10.5).text_color(t.dim).child(hints))))
+    .children(tools);
 }
 
 export function renderStatus() {

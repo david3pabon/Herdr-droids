@@ -1,7 +1,7 @@
 import { View, div, svg, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { spaces, panes, run, openOverlay, theme, window, shared, layout, settings } from "herdr";
-import { droid, lamp, matchKind } from "./kit.js";
+import { droid, lamp, matchKind, taskOf } from "./kit.js";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -59,7 +59,7 @@ export default class Tabs extends View {
       // A tab with an agent in it flies that agent's droid; anything else keeps
       // its program's own icon.
       const ag = program?.agent ? lead : null;
-      const name = /^tb\d+$/.test(c.name) ? program?.name ?? "Terminal" : c.name;
+      const name = c.named ? c.name : taskOf(c, lead) || "Terminal";
       return h_flex().id(`tab-${c.id}`).h(30).px(10).gap(8).rounded(8).items_center().flex_none().text_size(12.8)
         .border(1).border_color(c.active ? t.border : t.chrome).bg(c.active ? t.raised : t.chrome).text_color(c.active ? t.foreground : t.muted)
         .hover(s => s.bg(t.hover))
@@ -70,9 +70,9 @@ export default class Tabs extends View {
           else run("tab.select", { id: c.id });
         })
         .on_mouse_down("right", (_e, cx) => { cx.stop_propagation(); openOverlay({ mod: "menu", kind: "popup", width: 200, props: { tab: "tab", target: { id: c.id, space: space.id } } }); })
-        .when(Boolean(ag), el => el.child(droid(t, matchKind(ag.app ?? ag.program?.key), ag.status ?? "idle", { w: 18, h: 22, scale: 0.3, oy: -1 })))
+        .when(Boolean(ag), el => el.child(droid(t, matchKind(ag.app ?? ag.program?.key), ag.status ?? "idle", { w: 20, h: 26, scale: 0.34 })))
         .when(!ag && Boolean(program?.icon), el => el.child(program.tint ? svg(program.icon).size(14).text_color(t.muted) : image(program.icon).size(14)))
-        .child(div().max_w(170).truncate().child(c.zoomed ? `${name} Z` : name))
+        .child(div().max_w(150).truncate().child(c.zoomed ? `${name} Z` : name))
         .when(Boolean(c.status), el => el.child(lamp(t, c.status, 6)))
         .when(c.active, el => el.child(div().id(`close-${c.id}`).text_color(t.dim).on_mouse_down("left", stop).on_click((_e, cx) => { cx.stop_propagation(); run("tab.close", { id: c.id }); }).child(svg("mods/pane/close.svg").size(12))));
     };
@@ -84,23 +84,23 @@ export default class Tabs extends View {
     const panel = find(root, "panel"), body = find(root, "panel-body");
     const enabled = shared("workspace.panels") ?? ["files", "changes"];
     this.syncPanel(space, panel, body, enabled);
-    const panelButton = (id, label, icon) => {
+    const panelButton = (id, label) => {
       const on = panel && !panel.hidden && body?.active === id;
       return h_flex().id(`panel-${id}`).h(26).px(8).gap(5).flex_none().items_center().rounded(6)
-        .text_size(12).bg(on ? t.selected : t.chrome).text_color(on ? t.foreground : t.muted)
+        .text_size(12).border(1).border_color(on ? t.border : t.chrome).bg(on ? t.selected : t.chrome).text_color(on ? t.foreground : t.muted)
         .hover(s => s.bg(t.hover)).on_mouse_down("left", stop)
         .on_click(() => {
           if (on) run("layout.hide", { id: "panel" });
           else { run("layout.select", { stack: "panel-body", child: id }); run("layout.show", { id: "panel" }); }
-        }).child(svg(icon).size(14)).child(label);
+        }).child(label);
     };
     return h_flex().size_full().min_w(0).px(10).pl(lightsPadding).gap(3).items_center().bg(t.chrome).border_b(1).border_color(t.border)
       .on_mouse_up("left", () => { this.pressed = null; })
       .on_scroll_wheel(e => { if (Math.abs(e.delta.y) >= 1) run(e.delta.y > 0 ? "tab.prev" : "tab.next"); })
       .child(h_flex().id("tab-scroll").flex_1().min_w(0).h_full().items_center().gap(3).overflow_x_scrollbar().children(shown.map(item)))
       .child(button("tab-new", "+", () => openOverlay({ mod: "new-menu", kind: "popup", width: 250, height: 512 })))
-      .when(enabled.includes("files"), el => el.child(panelButton("files", "Files", "mods/files/file.svg")))
-      .when(enabled.includes("changes"), el => el.child(panelButton("changes", "Changes", "mods/changes/changes.svg")))
+      .when(enabled.includes("files"), el => el.child(panelButton("files", "Files")))
+      .when(enabled.includes("changes"), el => el.child(panelButton("changes", "Changes")))
       .when(w?.buttons, el => el.child(button("minimize", w.platform === "windows" ? svg("mods/droids-tabs/win-min.svg").size(16) : "−", () => run("window.minimize")))
         .child(button("maximize", w.platform === "windows" ? svg(`mods/droids-tabs/${w.maximized ? "win-restore" : "win-max"}.svg`).size(16) : "□", () => run("window.maximize")))
         .child(button("close-window", w.platform === "windows" ? svg("mods/droids-tabs/win-close.svg").size(16) : svg("mods/pane/close.svg").size(13), () => run("window.close"))));

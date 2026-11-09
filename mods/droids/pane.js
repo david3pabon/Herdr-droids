@@ -15,13 +15,12 @@ function folder(cwd) {
   return cwd === h ? "~" : cwd.startsWith(h + "/") ? "~" + cwd.slice(h.length) : cwd;
 }
 
-export function renderPane(cx, self) {
+export function renderPane() {
   const t = theme();
   const p = panes().find((x) => x.pane === props()?.pane);
   if (!p) return div();
   const name = ((p.program?.agent || p.program?.shell) && p.program.name) || p.title || p.program?.name || "shell";
   const pane = p.pane;
-  const on = self.hovered === pane;
   const st = p.status;
   const button = (id, icon, command, args) =>
     div().id(id).p(3).rounded(4).flex().items_center().text_color(t.dim)
@@ -29,22 +28,20 @@ export function renderPane(cx, self) {
       .on_click((_e, cx) => { cx.stop_propagation(); run(command, { ...args, pane }); })
       .child(glyph(t, icon));
   return h_flex().id(`droids-pane-${pane}`).size_full().px(10).gap(9).items_center()
-    .bg(t.background).border_b(1).border_color(t.border).text_size(12)
-    .on_hover((hovered, cx) => { self.hovered = hovered ? pane : null; cx.notify(); })
+    .bg(t.surface).border_b(1).border_color(t.border).text_size(12)
     .on_click(() => run("pane.focus", { pane }))
     .child(p.program?.agent
-      ? droid(t, kindId(p.app ?? p.program.key), st ?? "idle", { w: 20, h: 24, scale: 0.32, oy: -1 })
+      ? droid(t, kindId(p.app ?? p.program.key), st ?? "idle", { w: 20, h: 26, scale: 0.36 })
       : div().w(20).flex_none().flex().items_center().justify_center().text_color(t.dim).child("▮"))
-    .child(div().flex_none().truncate().max_w(240).font_medium().text_color(t.foreground).child(name))
-    .child(div().flex_1().truncate().text_color(t.dim).child(folder(p.cwd)))
+    .child(div().flex_none().truncate().max_w(240).font_semibold().text_color(t.foreground).child(name))
+    .child(div().flex_1().truncate().text_size(11).text_color(t.dim).child([folder(p.cwd), p.branch].filter(Boolean).join(" · ")))
     .when(Boolean(st), (el) => el.child(
       st === "blocked" ? chip(t, "needs you", t.blocked)
         : st === "done" ? chip(t, "done", t.done)
         : st === "working" ? chip(t, "working", t.working)
         : lamp(t, "idle", 6)))
-    .when(on, (el) => el
-      .child(button(`dp-r-${pane}`, "split-right", "pane.split", { direction: "right" }))
-      .child(button(`dp-d-${pane}`, "split-down", "pane.split", { direction: "down" }))
-      .child(button(`dp-z-${pane}`, p.zoomed ? "unzoom" : "zoom", "pane.zoom"))
-      .child(button(`dp-x-${pane}`, "close", "pane.close")));
+    .child(button(`dp-r-${pane}`, "split-right", "pane.split", { direction: "right" }))
+    .child(button(`dp-d-${pane}`, "split-down", "pane.split", { direction: "down" }))
+    .child(button(`dp-z-${pane}`, p.zoomed ? "unzoom" : "zoom", "pane.zoom"))
+    .child(button(`dp-x-${pane}`, "close", "pane.close"));
 }

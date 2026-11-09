@@ -154,6 +154,11 @@ started here too. Then: public repo, topic `herdr-layout`.
 - The layout is `"theme": { "light": "droids-light", "dark": "droids-dark" }`, so
   it follows the system or Settings ▸ Appearance. The theme picker in Settings
   overrides it while a layout shows.
+- The layout's `ui_font` is `.SystemUIFont`, the Mac's system font: it has the
+  real heavy weights the deck's lettering needs, which Herdr's built-in Geist
+  didn't show. On Windows or Linux, set `ui_font` to a font you have installed.
+- GPUI has no letter-spacing, so the wide-set capitals (`tracked()` in `kit.js`)
+  are thin spaces between the letters.
 - Droid parts move with `.loop`, which only knows `opacity`, `left`, `top`,
   `width`, `height` — no rotation. Droids are built from plates and pillars for
   exactly that reason; anything that needs turning (a radar dish) is an `svg`

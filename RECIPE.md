@@ -16,37 +16,38 @@ Left to right: a 300px sidebar, then the work column, no system title bar
 **Sidebar** (`chrome`, `#0c1320` dark / `#efe8db` light):
 
 - **Brand bar, 54px**, `window_drag`. A holo-cyan `◈` that breathes, `HERDR` in
-  13px semibold, `droid command` in 10px `dim`, a faint starfield of ~20 dots
+  13px bold wide-set capitals, `droid command` in 10.5px `dim`, a faint starfield of ~20 dots
   that twinkle on long random periods, then a search button and a fold button.
   On macOS the row starts at x=82 to clear the traffic lights.
-- **SPACES / fleet** — Herdr's spaces list, restyled: header 40px (label 11.5
-  semibold `muted`, caption 10.5 `dim`), rows 34px with the usual coloured
-  initial tile and, at its lower-right corner, a 6px lamp in the status colour
-  of the most urgent agent inside. Machine groups, worktrees, drag-reorder and
+- **SPACES / fleet** — Herdr's spaces list, restyled: header 40px over a 1px
+  rule (label 11.5 semibold wide-set `foreground`, caption 10.5 `dim`), rows 26px:
+  a 7px holo-glow lamp in the status colour of the most urgent agent inside, the
+  name, the branch, the tab count. Machine groups, worktrees, drag-reorder and
   the space menu stay exactly as Herdr ships them.
-- **AGENTS / droid bays** — the centrepiece. Header 40px with a sort chip on the
-  right ("Priority" / "By space"). Rows are 62px: a 40×50 **plinth** (rounded 7,
-  `#ffffff08` dark / `#00000008` light, 1px `border`) with the agent's droid
-  standing in it, then the agent's name (13 semibold), what it is working on
+- **AGENTS / droid bays** — the centrepiece. Header 40px with a `⇅` sort toggle on
+  the right ("Priority" / "By space" in its tooltip). Rows are 62px: the agent's
+  droid in the open at 40×50, then the agent's name (13 semibold), what it is working on
   (11.2 `muted`, truncated), then a status chip (10px, status colour on a 10%
   wash with a 33% border) and `space · how long`. Rows breathe on hover
-  (`hover`), stay `selected` while focused, and clicking one focuses its pane.
+  (`hover`), stay `raised` while focused, and clicking one focuses its pane.
   Under the rows, group headers: `Needs you / Done / Working / Idle`, or one
   group per space.
-- **Footer, 58px** — Settings (with an update dot) and Add machine, 24px rows.
+- **Footer, 58px** — `◈ N droids docked` over the machine's real layout and rail
+  keys, then icon buttons for Settings (with an update dot) and Add machine.
 
 **Work column**:
 
 - **Tab bar, 46px**, `window_drag`: pills 30px, radius 8, 1px `border` when
   active (`raised` background) and 1px `chrome` when not. A pill holding an
-  agent flies that agent's droid at 18×22 instead of the program icon, and ends
-  with a 6px status lamp. Then `+`, the Files and Changes panel buttons, and the
+  agent flies that agent's droid at 20×26 instead of the program icon, and ends
+  with a 6px status lamp. An unnamed tab takes its agent's task as its name.
+  Then `+`, the text-only Files and Changes panel buttons, and the
   window buttons where the system draws none.
 - **Panes**, 10px padding, 10px gaps, each framed: `background`, radius 10, 1px
-  `border`, 1px `accent` (gold) while focused, and a 32px header: the droid (20×24,
-  0.32 scale) or `▮` for a plain shell, the program or title in 12 semibold, the
-  folder in `dim`, a status chip, and on hover split-right / split-down / zoom /
-  close.
+  `border`, 1px `accent` (gold) while focused, and a 32px `surface` header: the droid (20×26,
+  0.36 scale) or `▮` for a plain shell, the program or title in 12 semibold, the
+  folder and branch in `dim`, a status chip, and split-right / split-down / zoom /
+  close, always showing.
 - **Side panel, 384px**, hidden until a tab-bar button opens it: `FILES / archive`
   with a utility-droid mascot, or `CHANGES / hangar log` with a probe-droid
   mascot that is agitated on conflicts, working while files are dirty and asleep
@@ -86,7 +87,7 @@ selects, double-clicking renames, dragging reorders — all as shipped.
 
 `layouts/droids.json` (root `row` → `sidebar` column 300px + `work` column) with
 `"theme": {"light":"droids-light","dark":"droids-dark"}`, `background: "canvas"`,
-`ui_font: "Geist"`, `font: "JetBrains Mono"`, `font_size: 14`,
+`ui_font: ".SystemUIFont"`, `font: "JetBrains Mono"`, `font_size: 14`,
 `terminal_padding: [14, 12]`, and a `pane` frame on the `tab: "active"` block
 whose header is `{ "mod": "droids", "props": { "role": "pane" } }`, height 32.
 
@@ -140,7 +141,7 @@ node trees into divs with generated `@keyframes` (duration = `period/2`,
   delay — so droids are built from plates and pillars and the pose differences
   per state are drawn, not rotated.
 - The art root must be rendered by the recursive `node()`; calling `box()` on it
-  drops every child and the droid vanishes (the plinth stays). That is silent.
+  drops every child and the droid vanishes (its box stays). That is silent.
 - Droids are absolutely positioned: the host box needs `.relative()`, and the
   art's own hop needs a frame between the two or the box moves instead.
 - `theme()` may not carry custom color names on an older app — always read them

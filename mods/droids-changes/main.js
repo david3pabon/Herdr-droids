@@ -1,7 +1,7 @@
 import { View, div } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input, Scrollbar, v_virtual_list } from "gpui-base";
 import { spaces, panes, focused, exec, readTextFile, watchFolder, theme, settings } from "herdr";
-import { droid } from "./kit.js";
+import { droid, tracked } from "./kit.js";
 
 function location() {
   const space = spaces().find((s) => s.active), f = focused();
@@ -185,7 +185,7 @@ export default class Changes extends View {
         // The inspector on watch: agitated when something is wrong, working
         // while there is something to commit, asleep when the tree is clean.
         .child(droid(t, "probe", this.files.some((f) => f.status === "U") ? "blocked" : this.files.length ? "working" : "idle", { w: 20, h: 24, scale: 0.32, oy: -1 }))
-        .child(div().font_semibold().child("CHANGES"))
+        .child(div().text_size(11.5).font_semibold().child(tracked("CHANGES")))
         .child(div().text_size(10.5).text_color(t.dim).child("hangar log"))
         .child(div().px(5).py(1).rounded(4).border_1().border_color(t.border).text_size(10).text_color(t.muted).child(`${this.files.length} files`))
         .child(div().flex_1()).child(div().text_size(11).text_color(t.ansi2).child(`+${add}`)).child(div().text_size(11).text_color(t.ansi1).child(`−${del}`)))

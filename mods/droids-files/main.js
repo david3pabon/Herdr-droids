@@ -2,7 +2,7 @@
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, Editor, EditorState } from "gpui-base";
 import { spaces, panes, focused, exec, readTextFile, watchFolder, theme, settings, window } from "herdr";
-import { droid } from "./kit.js";
+import { droid, tracked } from "./kit.js";
 
 function location() {
   const space = spaces().find(s => s.active), f = focused();
@@ -167,12 +167,12 @@ export default class Files extends View {
   render(cx) {
     if (key() !== this.context?.key) this.refresh(cx);
     const t = theme();
-    return v_flex().id("files").size_full().min_h(0).rounded(10).overflow_hidden().bg(t.background).border_1().border_color(t.border).text_color(t.foreground).text_size(13)
+    return v_flex().id("files").size_full().min_h(0).rounded(10).overflow_hidden().bg(t.surface).border_1().border_color(t.border).text_color(t.foreground).text_size(13)
       .child(h_flex().h(42).flex_none().px(14).gap(9).items_center().border_b(1).border_color(t.border)
         .when(Boolean(this.file), el => el.child(div().id("files-back").w(20).cursor_pointer().text_color(t.muted).on_click((_e, cx) => { this.show(null); cx.notify(); }).child("←")))
         // The archivist: busy while the tree loads, waiting otherwise.
         .child(droid(t, "utility", this.loading ? "working" : "idle", { w: 20, h: 24, scale: 0.32, oy: -1 }))
-        .child(div().font_semibold().child("FILES"))
+        .child(div().text_size(11.5).font_semibold().child(tracked("FILES")))
         .child(div().text_size(10.5).text_color(t.dim).child("archive"))
         .child(div().flex_1().min_w(0).truncate().text_right().text_size(12).text_color(t.dim).child(this.file ?? this.root?.split(/[\\/]/).pop() ?? "")))
       .when(!this.file, el => el.child(v_flex().id("files-tree").flex_1().min_h(0).overflow_y_scrollbar().p(6).children(this.rows("", 0, [], t))
