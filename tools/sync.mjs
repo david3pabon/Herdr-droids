@@ -2,6 +2,8 @@
 //
 //   node tools/sync.mjs            copy this folder's layout, themes and mods in
 //   node tools/sync.mjs --pull     copy the cloned mods back out of the app home
+//                                  (their own files only: mods/droids and the
+//                                  vendored kit stay as they are in this folder)
 //
 // The app hot-reloads every file under ~/.config/herdr-app, so a sync is
 // picked up immediately: no restart. Herdr's own layouts and mods are never
@@ -42,25 +44,30 @@ const mods = existsSync(join(root, "mods"))
 
 // kit.js, droids.js and icons/ are vendored: a mod may not import another
 // mod's code, so every droids-* mod carries its own copy of the shared kit.
+const sharedFiles = ["kit.js", "droids.js"];
+const icons = join(root, "mods/droids/icons");
 function vendor() {
-  const sharedFiles = ["kit.js", "droids.js"];
   for (const m of readdirSync(join(root, "mods"))) {
     if (!m.startsWith("droids") || m === "droids" || !statSync(join(root, "mods", m)).isDirectory()) continue;
     for (const f of sharedFiles) copyFileSync(join(root, "mods/droids", f), join(root, "mods", m, f));
-    const icons = join(root, "mods/droids/icons");
-    for (const f of walk(icons)) copyFileSync(f, join(root, "mods", m, relative(icons, f)));
+    mkdirSync(join(root, "mods", m, "icons"), { recursive: true });
+    for (const f of walk(icons)) copyFileSync(f, join(root, "mods", m, "icons", relative(icons, f)));
   }
 }
 vendor();
 
 if (process.argv.includes("--pull")) {
   // Pull the cloned mods out of the app home: they are edited where they run.
-  for (const m of [...mods, "droids-spaces", "droids-tabs", "droids-files", "droids-changes"]) {
+  for (const m of mods.filter((name) => name !== "droids")) {
     const src = join(home, "mods", m);
     if (!existsSync(src)) continue;
     for (const f of walk(src)) {
       if (f.endsWith("gpui-kit.d.ts") || f.endsWith("jsconfig.json")) continue;
-      copy(f, join(root, relative(home, f)));
+      const rel = relative(src, f);
+      if (sharedFiles.includes(rel) || rel.startsWith("icons/")) continue;
+      const to = join(root, relative(home, f));
+      if (!existsSync(to) && existsSync(join(icons, rel))) continue; // stray flat copy from an older sync
+      copy(f, to);
     }
   }
   console.log("pulled cloned mods out of the app home");

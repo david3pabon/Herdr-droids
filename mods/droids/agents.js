@@ -6,7 +6,7 @@
 import { div, svg } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { agents, terminals, panes, focused, spaces, run, theme, shared, setShared, setAgentOrder, layout } from "herdr";
-import { droid, lamp, chip, head, isDark } from "./kit.js";
+import { droid, lamp, chip, head, isDark, STATES } from "./kit.js";
 import { kindId, kindOf } from "./droids.js";
 
 const RANK = { blocked: 4, done: 3, working: 2, idle: 1 };
@@ -37,10 +37,10 @@ function duration(ms) {
 
 // A sub-agent without a pane isn't in agents(): take its raw word, count an
 // error as blocked, and never let it be done — it reports to its parent, and
-// the parent's "done" is the news.
+// the parent's "done" is the news. Any other word is treated as idle.
 const kidStatus = (k, listed) => {
   const s = listed.get(k.address) ?? k.status;
-  return s === "error" ? "blocked" : s === "done" ? "idle" : s;
+  return s === "error" ? "blocked" : s === "done" || !STATES.includes(s) ? "idle" : s;
 };
 
 // The pane that speaks for a tab: its agent, else the focused terminal.
@@ -76,7 +76,7 @@ export function renderAgents(cx, self) {
 
   // When each agent entered its state. Done and idle count as one: glancing at
   // a finished agent turns it idle, and that isn't the agent doing anything.
-  const changed = JSON.parse(localStorage.getItem("changed") ?? "{}");
+  const changed = (self.changed ??= JSON.parse(localStorage.getItem("changed") ?? "{}"));
   let dirty = false;
   for (const a of list0) {
     const s = a.status === "done" ? "idle" : a.status;
@@ -175,7 +175,7 @@ export function renderAgents(cx, self) {
             .bg(isDark() ? "#ffffff08" : "#00000008")
             .border(1).border_color(t.border)
             .when(a.pinned, (el) => el.border_color(t.accent))
-            .child(droid(t, kind, a.status, { w: 40, h: 50, scale: 0.68, oy: -2 }))
+            .child(droid(t, kind, a.status, { w: 40, h: 50, scale: 0.68 }))
         )
         .child(
           v_flex().flex_1().min_w(0).gap(2)
@@ -217,7 +217,7 @@ export function renderAgents(cx, self) {
     if (a.pinned) continue;
     const id = sort.id === "priority" ? `s${RANK[a.status] ?? 0}` : `p${a.space}`;
     const label = sort.id === "priority" ? SECTION[RANK[a.status] ?? 1] : a.space_name || "";
-    const status = sort.id === "priority" ? Object.keys(SECTION).find((k) => SECTION[k] === label) : null;
+    const status = sort.id === "priority" ? a.status : null;
     if (groups.at(-1)?.id === id) groups.at(-1).members.push(a);
     else groups.push({ id, label, status, members: [a] });
   }

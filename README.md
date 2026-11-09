@@ -41,19 +41,23 @@ force every agent into one state so you can watch the four animations.
 
 | Droid | Drives | Look |
 |---|---|---|
-| Astromech (R-unit) | Claude Code | cream dome, terracotta + steel panels, three legs |
-| Probe droid (Viper) | Codex | hovering dark orb, green iris, three claws |
-| Hover pod (D-series) | pi | round hull, wide visor, π on the chest, twin thrusters |
-| Protocol droid (3PO-class) | Kimi Code | gold plates, a crescent moon on the chest |
-| Utility droid (GNK-class) | OpenCode | amber band, grille, treads, tool arm |
-| Service droid (IT-O) | anything else | small, grey, one eye |
+| Astromech (R-unit) | Claude Code | dome as wide as its drum, terracotta + steel panels, three legs; a periscope pops up while working |
+| Probe droid (Viper) | Codex | hovering dark orb, green iris, two uneven masts, a fringe of dangling claws, a scan beam |
+| Hover pod (D-series) | pi | white egg, wide visor, π on the chest, two teal engine pods |
+| Protocol droid (3PO-class) | Kimi Code | slim gold humanoid, exposed waist wiring, a crescent moon on the chest |
+| Power droid (GNK-class) | OpenCode | charcoal walking box, amber hazard band, four charge cells, a universal plug |
+| Pit droid (DUM-series) | anything else | wide grey cap, one lens, thin limbs; folds into a bundle when idle |
 
 `mods/droids/droids.js` maps `program.key` / the agent's reported `app` to a
 kind — `kindId()` takes either a kind id or an agent name, so it is idempotent.
 Matching is exact or hyphen-bounded (`pi` claims `pi` and `pi-code`, not
 `openpi`); only names of 4+ characters match loosely inside a word. Unknown
-agents get the service droid, so nothing shows up bare. Add an agent by adding a
+agents get the pit droid, so nothing shows up bare. Add an agent by adding a
 `match` entry; add a droid by adding a builder.
+
+Parts that would fall under a pixel are wrapped in `fine()`: they draw at bay and
+depot sizes and drop out in tabs, pane headers and sub-agent rows, so each droid
+has to be recognisable from its outline and main colours alone.
 
 ### In the bays
 
@@ -70,10 +74,10 @@ agents get the service droid, so nothing shows up bare. Add an agent by adding a
 
 | State | What the droid does |
 |---|---|
-| `working` | bobs, holo-eye sweeps, status lamp blinks, tool arms move (welding spark, rolling treads, thruster flicker) |
-| `blocked` | red beacon over the head with a pulsing halo, an arm up (protocol droid waves), lamp flashes, an `!` by the head, body leans |
+| `working` | bobs, holo-eye sweeps, status lamp blinks, each droid does its job (astromech raises its periscope and races its chest bars, probe scans with a beam, pod fires its engines, protocol reads a long scroll, power droid waddles while its cells charge, pit droid hammers) |
+| `blocked` | red beacon over the head with a pulsing halo, an arm up (protocol droid waves), lamp flashes, an `!` by the head, body shudders |
 | `done` | hops, green lamp steady, `✓` by the head |
-| `idle` | dims to ~⅔, slow "breathing", lamps out, `z` drifting up |
+| `idle` | dims slightly, slow "breathing", eyes and lamps out, head droops or hoverers settle, `z` drifting up |
 
 Everything animates natively (`.loop`, `.frames`, `.spin`) — no `cx.timer`
 spinner, so an idle deck costs nothing to keep on screen.
@@ -134,9 +138,10 @@ herdr-app status        # file and mod errors land here
 herdr-app shot /tmp/x.png
 ```
 
-`tools/sync.mjs --pull` copies the cloned mods out of the app home back into
-this folder, so you can edit them in place in the app and keep this folder as
-the source of truth.
+`tools/sync.mjs --pull` copies the cloned mods' own files out of the app home
+back into this folder, so you can edit them in place in the app and keep this
+folder as the source of truth. `mods/droids` and the vendored `kit.js`,
+`droids.js` and `icons/` are never pulled: edit those here and sync.
 
 ## Sharing
 

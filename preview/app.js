@@ -2,7 +2,7 @@
 //
 // Renders layouts/droids.json's region tree at its real sizes with the real
 // theme colors, and draws droids from the same spec tree mods/droids/droids.js
-// gives the app (preview/build.mjs regenerates data.json from it).
+// gives the app (preview/build.mjs regenerates data.js from it).
 const DATA = globalThis.HERDR_DATA;
 
 const state = {
@@ -87,7 +87,10 @@ function nodeToDom(node) {
     }
     const r = (v) => (v == null ? null : `${v}px`);
     if (node.r != null) s.borderRadius = r(node.r);
-    if (node.rt != null) s.borderRadius = `${r(node.rt)} ${r(node.rt)} ${r(node.rb ?? 0)} ${r(node.rb ?? 0)}`;
+    if (node.rt != null || node.rb != null) {
+      const top = r(node.rt ?? node.r ?? 0), bottom = r(node.rb ?? node.r ?? 0);
+      s.borderRadius = `${top} ${top} ${bottom} ${bottom}`;
+    }
   }
   applyAnim(node, e);
   for (const c of node.children ?? []) e.appendChild(nodeToDom(c));
@@ -101,22 +104,11 @@ function droidNode(kind, st, opts = {}) {
   const wrap = el("div", "droid");
   wrap.style.width = `${(opts.w ?? tree.w) * k}px`;
   wrap.style.height = `${(opts.h ?? tree.h) * k}px`;
-  const body = nodeToDom(scaleTree(tree, k));
+  const body = nodeToDom(globalThis.HERDR_SCALE(tree, k));
   body.style.left = `${(opts.ox ?? 0) * k}px`;
   body.style.top = `${(opts.oy ?? 0) * k}px`;
   wrap.appendChild(body);
   return wrap;
-}
-
-function scaleTree(node, k) {
-  const out = { ...node };
-  for (const p of ["x", "y", "w", "h", "r", "rt", "rb", "rl", "rr", "size"]) {
-    if (p in node && typeof node[p] === "number") out[p] = Math.round(node[p] * k * 100) / 100;
-  }
-  if (node.bd) out.bd = [Math.max(0.5, node.bd[0] * k), node.bd[1]];
-  if (node.anim) out.anim = { ...node.anim, from: node.anim.from * k, to: node.anim.to * k };
-  if (node.children) out.children = node.children.map((c) => scaleTree(c, k));
-  return out;
 }
 
 // ---- small themed bits
@@ -209,7 +201,7 @@ function agentsPanel() {
   const bayRow = (a) => {
     const row = el("div", `row drow${a.focus ? " on" : ""}`);
     const bay = el("div", `bay${a.pinned ? " pinned" : ""}`);
-    bay.appendChild(droidNode(a.kind, a.state, { scale: 0.62, oy: -3 }));
+    bay.appendChild(droidNode(a.kind, a.state, { scale: 0.62 }));
     row.appendChild(bay);
     const info = el("div", "dinfo");
     const top = el("div", "dtop");
@@ -240,7 +232,7 @@ function agentsPanel() {
     const pn = el("div", `pinmark${a.pinned ? " on" : ""}`);
     pn.textContent = "\u2363";
     right.appendChild(pn);
-    right.appendChild(lamp(t[a.status], a.state === "working" ? 520 : a.state === "blocked" ? 300 : 0));
+    right.appendChild(lamp(t[a.state], a.state === "working" ? 520 : a.state === "blocked" ? 300 : 0));
     row.appendChild(right);
     drawn.push(row);
     for (const [i, k] of (a.subs ?? []).entries()) {
@@ -753,12 +745,17 @@ function draw() {
   document.documentElement.style.setProperty("--ui", "'Geist','Inter',system-ui,sans-serif");
   document.documentElement.style.setProperty("--mono", "'JetBrains Mono',ui-monospace,monospace");
   document.documentElement.style.setProperty("--line", t.border);
+  document.documentElement.style.setProperty("--muted", t.muted);
+  document.documentElement.style.setProperty("--dim", t.dim);
+  document.documentElement.style.setProperty("--pop", t.popover);
   document.body.dataset.appearance = state.appearance;
   const host = document.getElementById("stage");
   host.innerHTML = "";
   try {
+    // build first: drawing the droids is what collects their keyframes
+    const view = state.view === "window" ? windowMock() : gallery();
     styleSheets.textContent = CSS_BASE + frameAnims.join("\n") + THEMED(t);
-    host.appendChild(state.view === "window" ? windowMock() : gallery());
+    host.appendChild(view);
     fit();
     dbg();
   } catch (e) {
@@ -832,6 +829,7 @@ const THEMED = (t) => `
 .gcell{background:${t.background};border:1px solid ${t.border}}
 .stars .star{background:${t.holo}}
 .lamp{box-shadow:0 0 6px currentColor}
+.pinmark.on{color:${t.accent}}
 `;
 
 const CSS_BASE = `
@@ -861,7 +859,7 @@ body[data-appearance=light] .btn{border-color:#b9ae9a;color:#3a4450}
 .dright{display:flex;align-items:center;gap:7px;flex:none}
 .fold{font-size:13px;opacity:.6;padding:0 2px}
 .pinmark{font-size:12px;opacity:.35;line-height:1}
-.pinmark.on{opacity:1;color:${"accent"}}
+.pinmark.on{opacity:1}
 .bay.pinned{outline:1px solid transparent}
 .grouph{display:flex;align-items:center;gap:6px;height:26px;padding:0 8px;font-size:11px;color:var(--muted)}
 .grouph .gn{color:var(--dim)}
@@ -893,6 +891,7 @@ body[data-appearance=light] .btn{border-color:#b9ae9a;color:#3a4450}
 .row-x{font-size:11px;white-space:nowrap}
 .row-c{font-size:11px;flex:none}
 .droidlist .row{height:62px;align-items:center;gap:10px}
+.droidlist .subrow{height:26px;gap:8px}
 .bay{width:36px;height:46px;flex:none;position:relative;display:flex;align-items:center;justify-content:center}
 .dinfo{flex:1;min-width:0}
 .dtop{font-size:12.8px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

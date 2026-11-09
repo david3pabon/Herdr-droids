@@ -1,7 +1,7 @@
 # Droids — a Star Wars droid deck
 
 A whole Herdr window themed as a droid bay. Every coding agent is drawn as its
-own droid, and the droid acts out what its agent is doing: welding and scanning
+own droid, and the droid acts out what its agent is doing: scanning and charging
 while it works, beacon flashing when it needs you, hopping when it's done,
 asleep with a drifting `z` when it's idle. Terminals, the file tree, the diff
 view, spaces, tabs and the status bar all wear the same deck. Dark and light.
@@ -59,20 +59,23 @@ Left to right: a 300px sidebar, then the work column, no system title bar
 
 Agent states, per droid (all native motion, no timers):
 
-- **working** — the whole droid bobs (top 0→−1.6, 1100ms); its holo-eye sweeps
-  left/right (1500ms); the body lamp blinks (opacity 0.35→1, 520ms); the tool
-  arm works — the utility droid's arm pumps with a 160ms welding spark and its
-  tread ticks roll left, the probe's claws reach and its iris widens, the pod's
-  twin thruster flames flicker in height every 220/260ms.
-- **blocked** — a red beacon (5px, 360ms flash) sits over the head inside an 18px
-  halo pulsing 0.06→0.3; a 14px `!` flashes beside the head; the body leans
-  (left 0→−1.5, 460ms); the protocol droid waves an arm (top 14→19, 340ms);
+- **working** — the body bobs (top 0→−1.2, 1100ms; hoverers 0→−3, 1500ms) over
+  a shadow that stays on the floor; its holo-eye sweeps left/right (1500ms); the
+  body lamp blinks (opacity 0.35→1, 520ms); each droid does its job — the
+  astromech raises its periscope (1400ms) and its chest bars race, the power
+  droid waddles (left −1.5→1.5, 560ms) while its four cells charge, the probe's
+  beam and iris scan together (1700ms) as its claws reach, the pod's engine
+  flames flicker in height every 220/260ms, the protocol droid reads a holo
+  scroll that pays out over 2200ms, and the pit droid hammers (520ms).
+- **blocked** — a red beacon (5px, 360ms flash) sits over the head inside a 14px
+  halo pulsing 0.08→0.34; a 14px `!` flashes beside the head; the body shudders
+  (left −1→1, 460ms); the protocol droid waves an arm (left −2→3, 340ms);
   the eye sweeps back and forth in 380ms, linearly.
 - **done** — the droid hops (top 0→−4, 760ms), the lamp is a steady green, a 13px
   `✓` breathes next to the head.
-- **idle** — the droid dims to 0.72→0.62 over 3200ms, lamps go to hollow rings,
-  the visor light fades to 0.3, and a `z` (`·`, `z`, `Z`, `z` at 700ms) drifts up
-  over 2600ms at the head's right.
+- **idle** — the droid dims to 0.9→0.76 over 3200ms, lamps go to hollow rings,
+  eyes fade to 0.5, the protocol droid's head droops, hoverers settle 3px, and a
+  `z` (`·`, `z`, `Z`, `z` at 700ms) drifts up over 2600ms at the head's right.
 
 Hovering a bay row tints it; the sidebar under 170px becomes a rail of 30px rows
 with a 0.3-scale droid and a lamp. `Priority` / `By space` in the bays' header

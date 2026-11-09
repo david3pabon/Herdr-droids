@@ -12,7 +12,7 @@ import { build, scale as scaleTree, palette as specPalette, kindId, matchKind, k
 // Theme colors with fallbacks: custom names (hull, holo, deck, ...) come from
 // themes/droids-*.json; if a theme lacks one, the fallback keeps the look.
 export function c(t, name, dark, light) {
-  return t[name] ?? (t.dark === false ? light : dark);
+  return t[name] ?? (isDark() ? dark : light);
 }
 
 export function isDark() {
@@ -33,10 +33,8 @@ function box(node) {
   if (node.bg && node.bg !== "transparent") e = e.bg(node.bg);
   if (node.bd) e = e.border(node.bd[0]).border_color(node.bd[1]);
   if (node.r != null) e = e.rounded(node.r);
-  if (node.rt != null) {
-    e = e.rounded_t(node.rt);
-    if (node.rb != null) e = e.rounded_b(node.rb);
-  }
+  if (node.rt != null) e = e.rounded_t(node.rt);
+  if (node.rb != null) e = e.rounded_b(node.rb);
   if (node.op != null) e = e.opacity(node.op);
   return e;
 }

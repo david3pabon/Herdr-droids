@@ -35,10 +35,12 @@
     "holo": "#1f7a8c",
     "holo_dim": "#cfe0e4",
     "hull": "#ffffff",
-    "hull_shade": "#c3ccd6",
-    "hull_dark": "#8b96a3",
-    "metal": "#9aa4b0",
+    "hull_shade": "#b7c2ce",
+    "hull_dark": "#6d7a88",
+    "metal": "#7f8b99",
     "deck": "#ded5c4",
+    "visor": "#1c2935",
+    "outline": "#55626f",
     "signal": "#a87c12",
     "alert": "#b4362c"
   }

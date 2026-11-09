@@ -39,6 +39,8 @@
     "hull_dark": "#6a7889",
     "metal": "#3a475a",
     "deck": "#0a1018",
+    "visor": "#081019",
+    "outline": "#0b1320",
     "signal": "#e6b45c",
     "alert": "#e2685e"
   }
